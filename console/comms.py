@@ -9,7 +9,13 @@ class ROVComms:
         self.sock.sendall(command.encode())
 
     def receive_data(self):
-        return self.sock.recv(1024).decode()
+        line = self.sock.recv(1024).decode().strip()
+        temp_str, pressure_str, command = line.split(',')
+        temp = float(temp_str)
+        pressure = float(pressure_str)
+        print(f"Temp: {temp}, Pressure: {pressure}, Command: {command}")
+        list_data = [temp, pressure, command]
+        return list_data
 
     def close(self):
         self.sock.close()

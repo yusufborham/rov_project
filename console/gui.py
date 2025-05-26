@@ -66,17 +66,20 @@ class ROV_GUI(QWidget):
         key = event.key()
         print("Key pressed:", key)
 
-        if key == Qt.Key.Key_W:
+        if key == Qt.Key.Key_F:
             self.update_status("FORWARD")
-            if self.comms: self.comms.send_command("FORWARD")
-        elif key == Qt.Key.Key_S:
+            if self.comms: self.comms.send_command("F")  # send 1
+        elif key == Qt.Key.Key_R:
             self.update_status("BACKWARD")
-            if self.comms: self.comms.send_command("BACKWARD")
-        elif key == Qt.Key.Key_A:
-            self.update_status("LEFT")
-            if self.comms: self.comms.send_command("LEFT")
+            if self.comms: self.comms.send_command("B") # send 2
+        elif key == Qt.Key.Key_E:
+            self.update_status("UP")
+            if self.comms: self.comms.send_command("U") # send 4
         elif key == Qt.Key.Key_D:
-            self.update_status("RIGHT")
-            if self.comms: self.comms.send_command("RIGHT")
+            self.update_status("DOWN")
+            if self.comms: self.comms.send_command("D") # send 8
+        elif key == Qt.Key.Key_S:
+            self.update_status("STOP")
+            if self.comms: self.comms.send_command("S") # send 16
         else:
             self.update_status("IDLE")
