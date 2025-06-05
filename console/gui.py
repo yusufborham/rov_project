@@ -1,7 +1,8 @@
 # gui.py
 from PyQt6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont
+
 
 class ROV_GUI(QWidget):
     def __init__(self, comms=None):
@@ -34,7 +35,7 @@ class ROV_GUI(QWidget):
         pressure_layout.addWidget(self.pressure_label)
         self.pressure_frame.setLayout(pressure_layout)
 
-        # Status frame (for FORWARD/BACKWARD/etc.)
+        # Status frame
         self.status_frame = QFrame()
         self.status_frame.setStyleSheet("background-color: #333333; border: 2px solid #FF9900;")
         self.status_label = QLabel("Status: IDLE", self.status_frame)
@@ -44,42 +45,54 @@ class ROV_GUI(QWidget):
         status_layout.addWidget(self.status_label)
         self.status_frame.setLayout(status_layout)
 
-        # Horizontal layout for temp + pressure
+        # Layouts
         top_layout = QHBoxLayout()
         top_layout.addWidget(self.temp_frame)
         top_layout.addWidget(self.pressure_frame)
 
-        # Main layout
         main_layout = QVBoxLayout()
         main_layout.addLayout(top_layout)
         main_layout.addWidget(self.status_frame)
         self.setLayout(main_layout)
 
+        if self.comms:
+            self.timer = QTimer(self)
+            self.timer.timeout.connect(self.poll_data)
+            self.timer.start(200)  # 5 times/sec polling
+
+    def poll_data(self):
+        try:
+            result = self.comms.receive_data()
+            if result:
+                temp, pressure, _ = result
+                self.update_data(temp, pressure)
+        except Exception as e:
+            print(f"Polling error: {e}")
+
+
     def update_data(self, temp, pressure):
-        self.temp_label.setText(f"Temperature: {temp} °C")
-        self.pressure_label.setText(f"Pressure: {pressure} bar")
+        self.temp_label.setText(f"Temperature: {temp:.2f} °C")
+        self.pressure_label.setText(f"Pressure: {pressure:.3f} bar")
 
     def update_status(self, status_text):
         self.status_label.setText(f"Status: {status_text}")
 
     def keyPressEvent(self, event):
         key = event.key()
-        print("Key pressed:", key)
+        key_map = {
+            Qt.Key.Key_F: "F",
+            Qt.Key.Key_B: "B",
+            Qt.Key.Key_U: "U",
+            Qt.Key.Key_D: "D",
+            Qt.Key.Key_L: "L",
+            Qt.Key.Key_R: "R",
+            Qt.Key.Key_S: "S"
+        }
 
-        if key == Qt.Key.Key_F:
-            self.update_status("FORWARD")
-            if self.comms: self.comms.send_command("F")  # send 1
-        elif key == Qt.Key.Key_R:
-            self.update_status("BACKWARD")
-            if self.comms: self.comms.send_command("B") # send 2
-        elif key == Qt.Key.Key_E:
-            self.update_status("UP")
-            if self.comms: self.comms.send_command("U") # send 4
-        elif key == Qt.Key.Key_D:
-            self.update_status("DOWN")
-            if self.comms: self.comms.send_command("D") # send 8
-        elif key == Qt.Key.Key_S:
-            self.update_status("STOP")
-            if self.comms: self.comms.send_command("S") # send 16
+        if key in key_map:
+            command = key_map[key]
+            self.update_status(command)
+            if self.comms:
+                self.comms.send_command(command)
         else:
             self.update_status("IDLE")
