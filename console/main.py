@@ -10,5 +10,5 @@ if __name__ == "__main__":
     gui = ROV_GUI(comms=comm)
 
     gui.show()
-    gui.update_data(10,100)
+    gui.update_data(30,100)
     sys.exit(app.exec())

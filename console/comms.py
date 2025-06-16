@@ -14,19 +14,19 @@ class ROVComms:
     def send_command(self, command: str):
         self.sock.sendto(command.encode(), (self.remote_ip, self.remote_port))
     def receive_data(self):
+        print("Polling...")
         try:
             data, addr = self.sock.recvfrom(1024)
             message = data.decode().strip()
             print(f"[GUI] Received reply from {addr}: {message}")
 
             # Check and extract temperature and pressure
-            if "Temp is" in message and "pressure" in message:
-                try:
+            try:
                     parts = message.replace("Temp is", "").replace("pressure", "").split(",")
                     temp = float(parts[0].strip())
-                    pressure = float(parts[1].strip()) / 100000  # Convert to bar
+                    pressure = float(parts[1].strip()) 
                     return [temp, pressure, "Sensor"]
-                except (ValueError, IndexError) as parse_error:
+            except (ValueError, IndexError) as parse_error:
                     print(f"[GUI] Parsing error: {parse_error}")
         except socket.timeout:
             print("[GUI] No data received (timeout)")
