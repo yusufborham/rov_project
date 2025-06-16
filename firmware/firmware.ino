@@ -13,8 +13,7 @@
 #define THRUSTER3_PIN2 7
 
 #define TemperatureSensorPin A0
-#define slope_temperature 0.48828125
-#define intercept_temperature -50.0
+#define slope_temperature 0.385
 
 Adafruit_BMP280 bmp; // I2C
 
@@ -30,16 +29,23 @@ uint16_t remotePort = 6000;
 
 EthernetUDP Udp;
 
-float temperature = 25.4;
-float pressure = 1325.7;
+float temperature = -1;
+float pressure = -1;
 
 float readTemperature() {
-    float temperature = analogRead(TemperatureSensorPin);
-    temperature = slope_temperature * temperature + intercept_temperature;
+    float sum = 0 ;
+    for (int i = 0 ; i<5 ; i++){
+      sum += analogRead(A0);
+      delay(10);
+    }
+    sum = sum/5 ;
+    float vo =sum*(5.0 / 1023.0); // Convert ADC value to voltage
+    float temp = (500 - 200 * vo) / (slope_temperature * (vo - 5)) - 20.0 ; // Convert voltage to temperature in Celsius
     Serial.print("Temperature: ");
-    Serial.println(temperature);
-    return temperature;
+    Serial.println(temp);
+    return temp;
 }
+
 
 void sendSensorData() {
     char buffer[80];
@@ -95,13 +101,13 @@ void udpReceive() {
 }
 
 void setup() {
-    Serial.begin(57600);
+    Serial.begin(9600);
     Serial.println("[ENC28J60 ROV - UIPEthernet Mode]");
 
     Ethernet.begin(mac, ip);
     Udp.begin(1337);  // listen on this port for control commands
 
-    bmp.begin();
+    bmp.begin(0x76);
     bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,
                     Adafruit_BMP280::SAMPLING_X2,
                     Adafruit_BMP280::SAMPLING_X16,
@@ -121,11 +127,11 @@ unsigned long lastSendTime = 0;
 void loop() {
     udpReceive();  // check for incoming control messages
 
-    if (millis() - lastSendTime > 100) {
-        // temperature = readTemperature();
-        // pressure = bmp.readPressure();
-        temperature = 10 ;
-        pressure = 20 ;
+    if (millis() - lastSendTime > 1000) {
+        temperature = readTemperature();
+        pressure = bmp.readPressure()/100000.0;
+        // temperature = 10 ;
+        // pressure = 20 ;
         sendSensorData();
         lastSendTime = millis();
     }
